@@ -1,6 +1,6 @@
 {
-  "name": "play-it",
-  "key": "synt-xerror/play-it",
+  "name": "playit",
+  "key": "synt-xerror/playit",
   "version": "1.0.0",
   "description": "Downloads songs and videos then send to chat",
   "category": "media",
@@ -10,4 +10,7 @@
   },
   "license": "MIT",
   "main": "index.js"
+  "externalDependecies": {
+    "yt-dlp": "*"
+  }
 }
