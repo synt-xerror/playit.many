@@ -9,7 +9,7 @@
     "name": "synt-xerror"
   },
   "license": "MIT",
-  "main": "index.js"
+  "main": "index.js",
   "externalDependecies": {
     "yt-dlp": "*"
   }
