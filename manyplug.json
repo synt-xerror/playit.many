@@ -1,0 +1,13 @@
+{
+  "name": "play-it",
+  "key": "synt-xerror/play-it",
+  "version": "1.0.0",
+  "description": "Downloads songs and videos then send to chat",
+  "category": "media",
+  "service": false,
+  "author": {
+    "name": "synt-xerror"
+  },
+  "license": "MIT",
+  "main": "index.js"
+}
