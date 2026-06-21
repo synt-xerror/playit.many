@@ -69,7 +69,7 @@ async function handlePlay(ctx, t, mm, type, query) {
     media = await getMedia(mm, type, query, ctx, t);
     await msg.reply(result(media.title, media.channel, media.duration, media.url, type));
     if (type === "mp3") {
-      await ctx.sendAudio(media.filePath);
+      await ctx.sendAudio(media.filePath, { sendAudio: false });
     } else {
       await ctx.sendVideo(media.filePath);
     }

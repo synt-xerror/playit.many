@@ -1,7 +1,7 @@
 {
   "name": "playit",
   "key": "synt-xerror/playit",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Downloads songs and videos then send to chat",
   "category": "media",
   "service": false,
