@@ -1,7 +1,7 @@
 {
   "name": "playit",
   "key": "synt-xerror/playit",
-  "version": "1.1.1",
+  "version": "2.0.0",
   "description": "Downloads songs and videos then send to chat",
   "category": "media",
   "service": false,
@@ -9,6 +9,7 @@
     "name": "synt-xerror"
   },
   "license": "MIT",
+  "repo": "https://github.com/synt-xerror/playit.many",
   "main": "index.js",
   "externalDependecies": {
     "yt-dlp": "*"

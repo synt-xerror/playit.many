@@ -1,6 +1,5 @@
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
-
 const execFileAsync = promisify(execFile);
 
 function isUrl(str) {
@@ -19,7 +18,6 @@ function formatTime(seconds) {
 }
 
 async function getInfo(query) {
-  // funciona tanto para busca (ytsearch1:...) quanto para URL direta
   const target = isUrl(query) ? query : `ytsearch1:${query}`;
   const { stdout } = await execFileAsync("yt-dlp", [
     target,
@@ -35,19 +33,9 @@ async function getInfo(query) {
   };
 }
 
-async function getMedia(mm, type, query, ctx, t) {
-  const info = await getInfo(query);
-  const { filePath, cleanup } =
-    type === "mp3"
-      ? await mm.downloadAudio(info.url, ctx, t)
-      : await mm.downloadVideo(info.url, ctx, t);
-  return { ...info, filePath, cleanup };
-}
-
 function result(title, channel, duration, url, type) {
   const i = type === "mp4" ? "🎬" : "🎵";
   return `
-
 \`\`\`
 ${i} ${title}
 👤 ${channel}
@@ -60,42 +48,53 @@ ${url}
 async function handlePlay(ctx, t, mm, type, query) {
   const { msg } = ctx;
   if (!query) {
-    msg.reply(t("needQueryOrUrl", { cmd: type === "mp3" ? "play" : "playv" }));
-    return;
+    return msg.reply.text(
+      t("needQueryOrUrl", { cmd: type === "mp3" ? "play" : "playv" })
+    );
   }
-  msg.reply(t("downloading"));
+
+  msg.reply.text(t("wait"));
+
   let media;
   try {
-    media = await getMedia(mm, type, query, ctx, t);
-    await msg.reply(result(media.title, media.channel, media.duration, media.url, type));
-    if (type === "mp3") {
-      await ctx.sendAudio(media.filePath, { asVoice: false });
-    } else {
-      await ctx.sendVideo(media.filePath);
-    }
-  } catch (err) {
-    console.error("[Playit] download failed", { query, type, message: err.message, stderr: err.stderr });
-    msg.reply(t("downloadFailed", { error: err.stderr || err.message }));
+    // 1. busca metadata
+    const info = await getInfo(query);
+
+    // 2. calcula caption enquanto download ainda não começou
+    const caption = result(info.title, info.channel, info.duration, info.url, type);
+
+    // 3. inicia download
+    const { filePath, cleanup } = await (type === "mp3"
+      ? mm.downloadAudio(info.url, ctx, t)
+      : mm.downloadVideo(info.url, ctx, t));
+
+    media = { filePath, cleanup };
+
+    // 4. dispara upload e envia caption em paralelo — caption já pronto, vai instantâneo
+    const mediaPromise = type === "mp3"
+      ? msg.reply.audio(filePath, { asVoice: false })
+      : msg.reply.video(filePath);
+
+    await Promise.all([mediaPromise, ctx.send.text(caption)]);
   } finally {
-    media?.cleanup?.();
+    await media?.cleanup?.();
   }
 }
 
 export default async function (ctx) {
   const { msg } = ctx;
   const { t } = ctx.i18n.createT(import.meta.url);
-  const pfx = ctx.config.get("CMD_PREFIX");
   const mm = ctx.plugins.require("synt-xerror/manymedia");
+
   if (!mm) return new Error("[Playit] Dependence not found: synt-xerror/manymedia");
 
-  if (msg.is(pfx + "play")) {
-    const query = msg.args.slice(1).join(" ");
+  if (msg.is("play")) {
+    const query = msg.args.join(" ");
     await handlePlay(ctx, t, mm, "mp3", query);
   }
 
-  if (msg.is(pfx + "playv")) {
-    const query = msg.args.slice(1).join(" ");
+  if (msg.is("playv")) {
+    const query = msg.args.join(" ");
     await handlePlay(ctx, t, mm, "mp4", query);
   }
 }
-
