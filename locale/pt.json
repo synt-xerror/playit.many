@@ -1,4 +1,5 @@
 {
   "needQueryOrUrl": "Você precisa de uma busca ou URL",
-  "wait": "Aguarde um momentinho..."
+  "wait": "Aguarde um momentinho...",
+  "error": "Ops! Houve um erro ao tentar buscar o vídeo: "
 }

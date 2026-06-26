@@ -18,13 +18,18 @@ function formatTime(seconds) {
 }
 
 async function getInfo(query) {
-  const target = isUrl(query) ? query : `ytsearch1:${query}`;
+  const target = isUrl(query) ? query : `ytsearch10:${query}`;
+  
   const { stdout } = await execFileAsync("yt-dlp", [
     target,
     "--skip-download",
     "--print-json",
+    "--no-warnings",
+    "--restrict-filenames",
+    "--match-filter", "duration < 720",
   ]);
-  const data = JSON.parse(stdout);
+
+  const data = JSON.parse(stdout.trim().split("\n")[0]);
   return {
     title: data.title,
     url: data.webpage_url,
@@ -76,6 +81,8 @@ async function handlePlay(ctx, t, mm, type, query) {
       : msg.reply.video(filePath);
 
     await Promise.all([mediaPromise, ctx.send.text(caption)]);
+  } catch (err) {
+    await msg.reply.text(t("error", { message: err.message }));
   } finally {
     await media?.cleanup?.();
   }
