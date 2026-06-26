@@ -20,15 +20,21 @@ function formatTime(seconds) {
 async function getInfo(query) {
   const target = isUrl(query) ? query : `ytsearch10:${query}`;
   
-  const { stdout } = await execFileAsync("yt-dlp", [
-    target,
-    "--skip-download",
-    "--no-warnings",
-    "--restrict-filenames",
-    "--match-filter", "duration < 720",
-    "--ignore-errors",
-    "--print", "%(webpage_url)s\t%(title)s\t%(uploader)s\t%(duration)s",
-  ]);
+  let stdout;
+  try {
+    ({ stdout } = await execFileAsync("yt-dlp", [
+      target,
+      "--skip-download",
+      "--no-warnings",
+      "--restrict-filenames",
+      "--match-filter", "duration < 720",
+      "--ignore-errors",
+      "--print", "%(webpage_url)s\t%(title)s\t%(uploader)s\t%(duration)s",
+    ]));
+  } catch (err) {
+    if (!err.stdout?.trim()) throw err;
+    stdout = err.stdout;
+  }
 
   const line = stdout.trim().split("\n")[0];
   if (!line) throw new Error("Nenhum resultado encontrado (verifique o limite de duração)");
