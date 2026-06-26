@@ -1,5 +1,5 @@
 {
   "needQueryOrUrl": "Necesitas una búsqueda o una URL",
   "wait": "Un momento...",
-  "error": "¡Ups! Se produjo un error al intentar recuperar el vídeo: "
+  "error": "¡Ups! Se produjo un error al intentar recuperar el vídeo. Inténtalo de nuevo más tarde."
 }

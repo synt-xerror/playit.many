@@ -82,7 +82,8 @@ async function handlePlay(ctx, t, mm, type, query) {
 
     await Promise.all([mediaPromise, ctx.send.text(caption)]);
   } catch (err) {
-    await msg.reply.text(t("error", { message: err.message }));
+    console.error("[playit]", err);
+    await msg.reply.text(t("error"));
   } finally {
     await media?.cleanup?.();
   }
