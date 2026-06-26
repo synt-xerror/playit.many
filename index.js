@@ -23,18 +23,20 @@ async function getInfo(query) {
   const { stdout } = await execFileAsync("yt-dlp", [
     target,
     "--skip-download",
-    "--print-json",
     "--no-warnings",
     "--restrict-filenames",
     "--match-filter", "duration < 720",
+    "--print", "%(webpage_url)s\t%(title)s\t%(uploader)s\t%(duration)s",
   ]);
 
-  const data = JSON.parse(stdout.trim().split("\n")[0]);
+  const line = stdout.trim().split("\n")[0];
+  if (!line) throw new Error("Nenhum resultado encontrado (verifique o limite de duração)");
+  const [url, title, uploader, duration] = line.split("\t");
   return {
-    title: data.title,
-    url: data.webpage_url,
-    channel: data.uploader,
-    duration: formatTime(data.duration),
+    title,
+    url,
+    channel: uploader,
+    duration: formatTime(Number(duration)),
   };
 }
 
@@ -83,7 +85,7 @@ async function handlePlay(ctx, t, mm, type, query) {
     await Promise.all([mediaPromise, ctx.send.text(caption)]);
   } catch (err) {
     console.error("[playit]", err);
-    await msg.reply.text(t("error"));
+    await msg.reply.text(t("error", { message: err.message }));
   } finally {
     await media?.cleanup?.();
   }
