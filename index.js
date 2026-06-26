@@ -26,6 +26,7 @@ async function getInfo(query) {
     "--no-warnings",
     "--restrict-filenames",
     "--match-filter", "duration < 720",
+    "--ignore-errors",
     "--print", "%(webpage_url)s\t%(title)s\t%(uploader)s\t%(duration)s",
   ]);
 
