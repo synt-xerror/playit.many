@@ -17,7 +17,7 @@ function formatTime(seconds) {
   return `${m}:${s.toString().padStart(2, "0")}`;
 }
 
-async function getInfo(query) {
+async function getInfo(query, t) {
   const target = isUrl(query) ? query : `ytsearch10:${query}`;
   
   let stdout;
@@ -37,7 +37,8 @@ async function getInfo(query) {
   }
 
   const line = stdout.trim().split("\n")[0];
-  if (!line) throw new Error("Nenhum resultado encontrado (verifique o limite de duração)");
+  if (!line) throw new Error(t("noResults"));
+  
   const [url, title, uploader, duration] = line.split("\t");
   return {
     title,
@@ -47,51 +48,36 @@ async function getInfo(query) {
   };
 }
 
-function result(title, channel, duration, url, type) {
-  const i = type === "mp4" ? "🎬" : "🎵";
-  return `
-\`\`\`
-${i} ${title}
-👤 ${channel}
-⏱️ ${duration}
-\`\`\`
-${url}
-  `.trim();
-}
-
 async function handlePlay(ctx, t, mm, type, query) {
   const { msg } = ctx;
+  const cmdName = type === "mp3" ? "play" : "playv";
+
   if (!query) {
     return msg.reply.text(
-      t("needQueryOrUrl", { cmd: type === "mp3" ? "play" : "playv" })
+      t("needQueryOrUrl", { cmd: cmdName })
     );
   }
 
-  msg.reply.text(t("wait"));
+  await msg.reply.text(t("wait"));
 
   let media;
   try {
-    // 1. busca metadata
-    const info = await getInfo(query);
+    const info = await getInfo(query, t);
 
-    // 2. calcula caption enquanto download ainda não começou
-    const caption = result(info.title, info.channel, info.duration, info.url, type);
-
-    // 3. inicia download
     const { filePath, cleanup } = await (type === "mp3"
       ? mm.downloadAudio(info.url, ctx, t)
       : mm.downloadVideo(info.url, ctx, t));
 
     media = { filePath, cleanup };
 
-    // 4. dispara upload e envia caption em paralelo — caption já pronto, vai instantâneo
-    const mediaPromise = type === "mp3"
-      ? msg.reply.audio(filePath, { asVoice: false })
-      : msg.reply.video(filePath);
-
-    await Promise.all([mediaPromise, ctx.send.text(caption)]);
+    // Envia apenas a mídia correspondente, sem textos adicionais
+    if (type === "mp3") {
+      await msg.reply.audio(filePath, { asVoice: false });
+    } else {
+      await msg.reply.video(filePath);
+    }
   } catch (err) {
-    console.error("[playit]", err);
+    ctx.log.error(`[playit] Error: ${err.message}`);
     await msg.reply.text(t("error", { message: err.message }));
   } finally {
     await media?.cleanup?.();
@@ -103,7 +89,10 @@ export default async function (ctx) {
   const { t } = ctx.i18n.createT(import.meta.url);
   const mm = ctx.plugins.require("synt-xerror/manymedia");
 
-  if (!mm) return new Error("[Playit] Dependence not found: synt-xerror/manymedia");
+  if (!mm) {
+    ctx.log.error("[Playit] Dependency not found: synt-xerror/manymedia");
+    return;
+  }
 
   if (msg.is("play")) {
     const query = msg.args.join(" ");

@@ -1,5 +1,6 @@
 {
-  "needQueryOrUrl": "Necesitas una búsqueda o una URL",
-  "wait": "Un momento...",
-  "error": "¡Ups! Se produjo un error al intentar recuperar el vídeo. Inténtalo de nuevo más tarde."
+  "needQueryOrUrl": "Por favor, introduce el nombre de la canción/video o el enlace. Ejemplo: `{{cmd}} nombre de la canción`",
+  "wait": "Buscando el archivo, por favor espera...",
+  "noResults": "No se encontraron resultados (recuerda que el límite máximo es de 12 minutos).",
+  "error": "No se pudo procesar la solicitud: {{message}}"
 }

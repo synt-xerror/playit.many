@@ -1,5 +1,6 @@
 {
-  "needQueryOrUrl": "Você precisa de uma busca ou URL",
+  "needQueryOrUrl": "Por favor, informe o nome da música/vídeo ou o link. Exemplo: `{{cmd}} nome da música`",
   "wait": "Aguarde um momentinho...",
-  "error": "Ops! Houve um erro ao tentar buscar o vídeo. Tente novamente mais tarde."
+  "noResults": "Nenhum resultado encontrado (lembrando que o limite máximo é de 12 minutos).",
+  "error": "Não foi possível processar o pedido: {{message}}",
 }
