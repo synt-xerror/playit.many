@@ -2,5 +2,5 @@
   "needQueryOrUrl": "Por favor, informe o nome da música/vídeo ou o link. Exemplo: `{{cmd}} nome da música`",
   "wait": "Aguarde um momentinho...",
   "noResults": "Nenhum resultado encontrado (lembrando que o limite máximo é de 12 minutos).",
-  "error": "Não foi possível processar o pedido: {{message}}",
+  "error": "Não foi possível processar o pedido: {{message}}"
 }

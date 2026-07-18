@@ -70,10 +70,24 @@ async function handlePlay(ctx, t, mm, type, query) {
 
     media = { filePath, cleanup };
 
-    // Envia apenas a mídia correspondente, sem textos adicionais
     if (type === "mp3") {
-      await msg.reply.audio(filePath, { asVoice: false });
+      // 1. Enviamos o áudio e guardamos a resposta (que contém os dados da mensagem enviada)
+      const audioMessage = await msg.reply.audio(filePath, { asVoice: false });
+      
+      // 2. Criamos o texto com o título e o autor (canal)
+      const caption = `🎵 *${info.title}* - ${info.channel}`;
+      
+      // 3. Respondemos diretamente à mensagem do áudio usando o método reply do framework
+      // Nota: Dependendo da sua biblioteca, pode ser 'audioMessage.reply.text' ou 'ctx.reply.text' passando o message_id.
+      // A forma mais comum em libs baseadas em contexto é usar o reply da própria mensagem retornada:
+      if (audioMessage?.reply?.text) {
+        await audioMessage.reply.text(caption, { parse_mode: "Markdown" });
+      } else {
+        // Fallback caso sua biblioteca não anexe o helper reply na mensagem retornada
+        await msg.reply.text(caption, { reply_to_message_id: audioMessage.message_id, parse_mode: "Markdown" });
+      }
     } else {
+      // Para vídeos, continua enviando normalmente sem texto extra
       await msg.reply.video(filePath);
     }
   } catch (err) {
