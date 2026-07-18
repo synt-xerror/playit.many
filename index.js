@@ -17,9 +17,28 @@ function formatTime(seconds) {
   return `${m}:${s.toString().padStart(2, "0")}`;
 }
 
+function extractQuotedText(quoted) {
+  if (!quoted) return null;
+  const m = quoted.message || quoted;
+  return (
+    m?.conversation ||
+    m?.extendedTextMessage?.text ||
+    m?.imageMessage?.caption ||
+    m?.videoMessage?.caption ||
+    null
+  );
+}
+
+async function resolveQuery(ctx, rawQuery) {
+  if (rawQuery) return rawQuery;
+  if (!ctx.msg.hasReply) return null;
+  const quoted = await ctx.msg.getReply();
+  return extractQuotedText(quoted);
+}
+
 async function getInfo(query, t) {
   const target = isUrl(query) ? query : `ytsearch10:${query}`;
-  
+
   let stdout;
   try {
     ({ stdout } = await execFileAsync("yt-dlp", [
@@ -35,10 +54,9 @@ async function getInfo(query, t) {
     if (!err.stdout?.trim()) throw err;
     stdout = err.stdout;
   }
-
   const line = stdout.trim().split("\n")[0];
   if (!line) throw new Error(t("noResults"));
-  
+
   const [url, title, uploader, duration] = line.split("\t");
   return {
     title,
@@ -51,43 +69,28 @@ async function getInfo(query, t) {
 async function handlePlay(ctx, t, mm, type, query) {
   const { msg } = ctx;
   const cmdName = type === "mp3" ? "play" : "playv";
-
   if (!query) {
     return msg.reply.text(
       t("needQueryOrUrl", { cmd: cmdName })
     );
   }
-
   await msg.reply.text(t("wait"));
-
   let media;
   try {
     const info = await getInfo(query, t);
-
     const { filePath, cleanup } = await (type === "mp3"
       ? mm.downloadAudio(info.url, ctx, t)
       : mm.downloadVideo(info.url, ctx, t));
-
     media = { filePath, cleanup };
-
     if (type === "mp3") {
-      // 1. Enviamos o áudio e guardamos a resposta (que contém os dados da mensagem enviada)
       const audioMessage = await msg.reply.audio(filePath, { asVoice: false });
-      
-      // 2. Criamos o texto com o título e o autor (canal)
       const caption = `🎵 *${info.title}* - ${info.channel}`;
-      
-      // 3. Respondemos diretamente à mensagem do áudio usando o método reply do framework
-      // Nota: Dependendo da sua biblioteca, pode ser 'audioMessage.reply.text' ou 'ctx.reply.text' passando o message_id.
-      // A forma mais comum em libs baseadas em contexto é usar o reply da própria mensagem retornada:
       if (audioMessage?.reply?.text) {
         await audioMessage.reply.text(caption, { parse_mode: "Markdown" });
       } else {
-        // Fallback caso sua biblioteca não anexe o helper reply na mensagem retornada
         await msg.reply.text(caption, { reply_to_message_id: audioMessage.message_id, parse_mode: "Markdown" });
       }
     } else {
-      // Para vídeos, continua enviando normalmente sem texto extra
       await msg.reply.video(filePath);
     }
   } catch (err) {
@@ -102,19 +105,16 @@ export default async function (ctx) {
   const { msg } = ctx;
   const { t } = ctx.i18n.createT(import.meta.url);
   const mm = ctx.plugins.require("synt-xerror/manymedia");
-
   if (!mm) {
     ctx.log.error("[Playit] Dependency not found: synt-xerror/manymedia");
     return;
   }
-
   if (msg.is("play")) {
-    const query = msg.args.join(" ");
+    const query = await resolveQuery(ctx, msg.args.join(" "));
     await handlePlay(ctx, t, mm, "mp3", query);
   }
-
   if (msg.is("playv")) {
-    const query = msg.args.join(" ");
+    const query = await resolveQuery(ctx, msg.args.join(" "));
     await handlePlay(ctx, t, mm, "mp4", query);
   }
 }
