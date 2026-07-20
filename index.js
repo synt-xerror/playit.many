@@ -1,3 +1,5 @@
+/** @typedef {import("@manybot/types/en").PluginContext} PluginContext */
+
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 const execFileAsync = promisify(execFile);
@@ -17,23 +19,15 @@ function formatTime(seconds) {
   return `${m}:${s.toString().padStart(2, "0")}`;
 }
 
-function extractQuotedText(quoted) {
-  if (!quoted) return null;
-  const m = quoted.message || quoted;
-  return (
-    m?.conversation ||
-    m?.extendedTextMessage?.text ||
-    m?.imageMessage?.caption ||
-    m?.videoMessage?.caption ||
-    null
-  );
-}
-
+/**
+ * @param {PluginContext} ctx
+ * @param {string|null} rawQuery
+ */
 async function resolveQuery(ctx, rawQuery) {
   if (rawQuery) return rawQuery;
   if (!ctx.msg.hasReply) return null;
   const quoted = await ctx.msg.getReply();
-  return extractQuotedText(quoted);
+  return quoted.body;
 }
 
 async function getInfo(query, t) {
@@ -66,6 +60,10 @@ async function getInfo(query, t) {
   };
 }
 
+/**
+ * @param {PluginContext} ctx
+ * @param {string|null} rawQuery
+ */
 async function handlePlay(ctx, t, mm, type, query) {
   const { msg } = ctx;
   const cmdName = type === "mp3" ? "play" : "playv";
@@ -101,6 +99,10 @@ async function handlePlay(ctx, t, mm, type, query) {
   }
 }
 
+/**
+ * @param {PluginContext} ctx
+ * @param {string|null} rawQuery
+ */
 export default async function (ctx) {
   const { msg } = ctx;
   const { t } = ctx.i18n.createT(import.meta.url);
