@@ -2,7 +2,10 @@
 
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
+import path from "node:path";
 const execFileAsync = promisify(execFile);
+
+const VIDEO_EXTENSIONS = new Set([".mp4", ".mov", ".webm", ".mkv", ".gif"]);
 
 function isUrl(str) {
   try {
@@ -60,6 +63,26 @@ async function getInfo(query, t) {
   };
 }
 
+// Sends one gallery item, picking video or image reply based on extension.
+function sendGalleryItem(msg, filePath) {
+  const ext = path.extname(filePath).toLowerCase();
+  return VIDEO_EXTENSIONS.has(ext) ? msg.reply.video(filePath) : msg.reply.image(filePath);
+}
+
+// Fallback for /playv links yt-dlp can't handle (image carousels, galleries).
+// Only makes sense for direct URLs, not search queries.
+async function tryImageFallback(ctx, mm, query) {
+  if (!isUrl(query) || !mm.downloadImages) return false;
+
+  const { filePaths, cleanup } = await mm.downloadImages(query, ctx);
+  try {
+    for (const p of filePaths) await sendGalleryItem(ctx.msg, p);
+    return true;
+  } finally {
+    await cleanup?.();
+  }
+}
+
 /**
  * @param {PluginContext} ctx
  * @param {string|null} rawQuery
@@ -92,6 +115,14 @@ async function handlePlay(ctx, t, mm, type, query) {
       await msg.reply.video(filePath);
     }
   } catch (err) {
+    if (type === "mp4") {
+      try {
+        const handled = await tryImageFallback(ctx, mm, query);
+        if (handled) return;
+      } catch (galleryErr) {
+        ctx.log.error(`[playit] Gallery fallback failed: ${galleryErr.message}`);
+      }
+    }
     ctx.log.error(`[playit] Error: ${err.message}`);
     await msg.reply.text(t("error", { message: err.message }));
   } finally {
